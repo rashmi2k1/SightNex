@@ -1,0 +1,370 @@
+<!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script> -->
+<style>
+    input[type="file"] {
+        display: none;
+    }
+    canvas {
+    border-radius: 12px;
+    }
+    .video {
+    border-radius: 12px;
+    }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.9.0/p5.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.9.0/addons/p5.dom.min.js"></script>
+<script src="https://unpkg.com/ml5@latest/dist/ml5.min.js"></script>
+<script type="text/javascript">
+  // Classifier Variable
+  let classifier = [];
+  // Model URL
+  let imageModelURL = ['https://teachablemachine.withgoogle.com/models/gWFyB8yWV/', 
+  'https://teachablemachine.withgoogle.com/models/clTARk7Ez/',
+  'https://teachablemachine.withgoogle.com/models/ZKMXFO5Zl/', 
+  'https://teachablemachine.withgoogle.com/models/zqLvc_-u4/'] ;
+
+  
+  // Video
+  let video;
+  let flippedVideo;
+  let count = 0;
+  // For displaying the label
+  let label = "waiting...";
+
+  // To store the classification
+  let labelArr = []; //stores the classified label
+  let negatvieLabelArr = []; //stores the unclassififded label
+  let percentArr = []; //stores the confidence %
+  let aiVision = []; //stores the formatted output
+  let img //stores the uploaded image
+
+  // Load the model first
+  function preload() {
+    classifier[0] = ml5.imageClassifier(imageModelURL[0] + 'model.json');
+    classifier[1] = ml5.imageClassifier(imageModelURL[1] + 'model.json');
+    classifier[2] = ml5.imageClassifier(imageModelURL[2] + 'model.json');
+    classifier[3] = ml5.imageClassifier(imageModelURL[3] + 'model.json');
+  }
+
+  //setup function where we create a input button for an image, a canvas, and the webcam video. Along with starting to classify the video footage of the webcam 
+  function setup() {
+    input = createFileInput(handleFile);
+    input.position(180, 550);
+   
+    createCanvas(960, 600);
+    // Create the video
+    video = createCapture(VIDEO);
+    video.size(320, 240);
+    // set border radius to video 
+    // video.borderRadius = "10px";
+    
+    video.hide();
+    // set border radius for video
+    // video.style('border-radius', '10px');
+
+    flippedVideo = ml5.flipImage(video);
+    // Start classifying
+    classifyVideo();
+  }
+
+  
+  //drawing everything on screen
+  function draw() {
+    background(0);
+ 
+    // Draw the labels
+
+    //gender classified label
+    fill(255);
+    textSize(16);
+    textAlign(CENTER);
+    text(labelArr[0], width / 1.58, height / 1.2);
+
+    //glasses classified label
+    fill(255);
+    textSize(16);
+    textAlign(CENTER);
+    text(labelArr[1], width / 2.4, height/ 1.2);
+
+    //hat classified label
+    fill(255);
+    textSize(16);
+    textAlign(CENTER);
+    text(labelArr[2], width / 1.2, height/ 1.2);
+
+    //Name classified label
+    fill(255);
+    textSize(16);
+    textAlign(CENTER);
+    text(labelArr[3], width / 5, height / 1.2);
+
+    //gender unclassified label
+    fill(120);
+    textSize(16);
+    textAlign(CENTER);
+    text(negatvieLabelArr[0], width / 1.58, height / 1.1);
+
+    //glasses unclassified label
+    fill(120);
+    textSize(16);
+    textAlign(CENTER);
+    text(negatvieLabelArr[1], width / 2.4, height / 1.1);
+
+    //hat unclassifeid label
+    fill(120);
+    textSize(16);
+    textAlign(CENTER);
+    text(negatvieLabelArr[2], width / 1.2, height / 1.1);
+
+    //name unclassifeid label
+    fill(120);
+    textSize(16);
+    textAlign(CENTER);
+    text(negatvieLabelArr[3], width / 5, height / 1.1);
+
+    //formatted text output 
+    fill(255);
+    textSize(16);
+    textAlign(CENTER);
+    text(aiVision, width / 2, height / 1.3);
+
+    //if statement to check if an image has been uplaoded, if not show video feed, if yes cut video feed and show image
+    if (img) {
+    // image(img, 210, 80);
+    video.hide();
+    }else{
+        image(flippedVideo, (width / 2) - (320 / 2), (height / 2) - (240 / 1.5));
+    }
+  }
+
+  //function that handles file upload
+  function handleFile(file) {
+//   print(file);
+//   if (file.type === 'image') {
+//     img = createImg(file.data);
+//     img.hide();
+//   } else {
+//     img = null;
+//   }
+}
+
+  // Get a prediction for the current video frame or image
+  function classifyVideo() {
+    //check if an image exists, if not analyse video
+    if(!img){
+        flippedVideo = ml5.flipImage(video)
+        //this if statement uses a count in order to use each model one by one, this prevents models from overwriting eachothers labels
+        if(count == 0){
+            classifier[0].classify(flippedVideo, gotResult);
+        }else if (count == 1){
+            classifier[1].classify(flippedVideo, gotResult);
+        }else if (count == 2){
+            classifier[2].classify(flippedVideo, gotResult);
+        }else if (count == 3){
+            classifier[3].classify(flippedVideo, gotResult);
+        }else {
+            classifier[0].classify(flippedVideo, gotResult);
+        }
+
+        flippedVideo.remove();
+
+    //if an image exists, analyse the image instead of the video
+    }else{
+         //this if statement uses a count in order to use each model one by one, this prevents models from overwriting eachothers labels
+        if(count == 0){
+            classifier[0].classify(img, gotResult);
+        }else if (count == 1){
+            classifier[1].classify(img, gotResult);
+        }else if (count == 2){
+            classifier[2].classify(img, gotResult);
+        }else if (count == 3){
+            classifier[3].classify(img, gotResult);
+        }else {
+            classifier[0].classify(img, gotResult);
+        }
+    }
+  }
+
+
+  // When we get a result
+  function gotResult(error, results) {
+    // If there is an error
+    if (error) {
+      console.error(error);
+      return;
+    }
+    // The results are in an array ordered by confidence.
+    // if statement uses a count in order to use and set each label one by one, this prevents models from overwritting eachothers labels
+    if(count == 0){
+        //settting the gender percentage
+        percentArr[0] = (results[0].confidence*100).toFixed(0)
+        //setting the gender label equal to the higher confidence result
+        labelArr[0] = results[0].label + ": " + percentArr[0] + "%";
+        //setting the failed gender label equalt o the lower confidence result
+        negatvieLabelArr[0] = results[1].label + ": " + (results[1].confidence*100).toFixed(0) + "%";
+        //incrementing count to prevent re-writting with wrong model data
+        count ++
+    }else if(count == 1){
+        //settting the glasses percentage
+        percentArr[1] = (results[0].confidence*100).toFixed(0)
+         //setting the glasses label equal to the higher confidence result
+        labelArr[1] = results[0].label + ": " + percentArr[1] + "%";
+        //setting the failed glasses label equalt o the lower confidence result
+        negatvieLabelArr[1] = results[1].label + ": " + (results[1].confidence*100).toFixed(0) + "%";
+        //incrementing count to prevent re-writting with wrong model data
+        count ++
+    }else if (count == 2){
+        //settting the hat percentage
+        percentArr[2] = (results[0].confidence*100).toFixed(0)
+        //setting the hat label equal to the higher confidence result
+        labelArr[2] = results[0].label + ": " + percentArr[2] + "%";
+        //setting the failed hat equalt o the lower confidence result
+        negatvieLabelArr[2] = results[1].label + ": " + (results[1].confidence*100).toFixed(0) + "%";
+        //incrementing count to prevent re-writting with wrong model data
+        count ++
+    }else if (count == 3){
+        //settting the gender percentage
+        percentArr[3] = (results[0].confidence*100).toFixed(0)
+        //setting the gender label equal to the higher confidence result
+        labelArr[3] = results[0].label + ": " + percentArr[3] + "%";
+        //setting the failed gender label equalt o the lower confidence result
+        negatvieLabelArr[3] = results[1].label + ": " + (results[1].confidence*100).toFixed(0) + "%";
+        //incrementing count to prevent re-writting with wrong model data
+        count ++
+    }
+    
+    //This else statement happens once the count reaches top, once this happens an if statement is called that generated the formatted output and the count is reset
+    else{
+        //if statement checks what each analysis was, and geneartes parts of a string dependant on % 
+
+        //generates the male and female part of the output string
+        if(labelArr[0][0] == 'M'){
+            if(percentArr[0] >= 80){
+                aiVision[0] = "This person is a Man"
+            }else if(percentArr[0] >= 60){
+                aiVision[0] = "This person is likely a Man"
+            }else{
+                aiVision[0] = "This person could be a Man"
+            }
+            
+        }else{
+            if(percentArr[0] >= 60){
+                aiVision[0] = "This person is a Female"
+            }else if(percentArr[0] >= 60){
+                aiVision[0] = "This person is likely a Female"
+            }else{
+                aiVision[0] = "This person could be a Female"
+            }
+        }
+
+        //generates the glasses and no glasses part of the output string
+        if(labelArr[1][0] == 'G'){
+            if(percentArr[1] >= 80){
+                aiVision[1] = " having glasses"
+            }else if(percentArr[1] >= 60){
+                aiVision[1] = " & is likely wearing glasses"
+            }else{
+                aiVision[1] = " who might be wearing glasses"
+            }
+
+           
+        }else{
+            if(percentArr[1] >= 80){
+                aiVision[1] = " without glasses"
+            }else if(percentArr[1] >= 80){
+                aiVision[1] = " & is likely without glasses"
+            }else{
+                aiVision[1] = " who might be without glasses"
+            }
+        }
+
+        //generates the hat and no hat part of the output string
+        if(labelArr[2][0] == 'H'){
+            if(percentArr[2] >= 80){
+                aiVision[2] = " and without hat &"
+            }else if(percentArr[2] >= 60){
+                aiVision[2] = " and likely without hat &"
+            }else{
+                aiVision[2] = " and might not be wearing hat &"
+            }
+        }else{
+            if(percentArr[2] >= 80){
+                aiVision[2] = " and wearing hat &"
+            }else if(percentArr[2] >= 60){
+                aiVision[2] = " and likely to wear hat &"
+            }else{
+                aiVision[2] = " and might be wearing hat &"
+            }
+        }
+
+        //generates the name part of the output string
+        if(labelArr[3][0] == 'N'){
+            if(percentArr[3] >= 80){
+                aiVision[3] = " and is Neel."
+            }else if(percentArr[3] >= 60){
+                aiVision[3] = " and likely is Neel."
+            }else{
+                aiVision[3] = " and might be Neel."
+            }
+        }else{
+            if(percentArr[3] >= 80){
+                aiVision[3] = " and is not Neel."
+            }else if(percentArr[3] >= 60){
+                aiVision[3] = " and likely not Neel."
+            }else{
+                aiVision[3] = " and might not be Neel."
+            }
+        }
+
+        
+
+        //resetting count to enable continuous video analysis
+        count = 0
+    }
+
+    
+    // Classifiy again!
+    classifyVideo();
+
+
+//     function gotResults(error, results) {
+//   // Something went wrong!
+//   if (error) {
+//     console.error(error);
+//     return;
+//   }
+//   // Store the label and classify again!
+//   label = results[3].label;
+//   classifyVideo();
+// }
+
+
+
+    // Automatically download a screenshot of the canvas when label is "DuaLipa"
+    function gotResults(error, results) {
+    // Something went wrong!
+    if (error) {
+        console.error(error);
+        return;
+    }
+    // Store the label and classify again!
+    label = results[3].label;
+    setTimeout (function() {
+    classifyVideo();
+    }, 3000);
+    // Automatically download a screenshot of the canvas when label is "DuaLipa" every 3 seconds
+    
+    if (label == "DuaLipa") {
+        let timestamp = year() + '-' + month() + '-' + day() + '♦' + hour() + '•' + minute() + '•' + second();
+        // Save every 3 seconds (3000 milliseconds)
+        
+        save(timestamp + '.png');
+        
+    }
+    // } , 3000);
+    }
+    }
+
+
+
+
+</script>
